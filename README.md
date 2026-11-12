@@ -44,6 +44,9 @@ PPS-tienda-prueba/
 │       ├── styles.css       # tema neón/synthwave
 │       ├── components/      # cabecera + menú hamburguesa
 │       └── views/           # una vista por "página"
+├── .github/
+│   └── workflows/
+│       └── deploy-frontend.yml   # CI/CD: publica el frontend en GitHub Pages
 ├── requirements.txt
 ├── smoke_test.py            # 62 comprobaciones de la API
 └── README.md
@@ -89,6 +92,76 @@ por defecto `http://127.0.0.1:8000`).
 | `client` | `client1234` | `client` | Comprar: catálogo, carrito y **solo sus** pedidos |
 
 Las cuentas nuevas se registran con rol `client`.
+
+## Despliegue
+
+La aplicación está desplegada en producción con los dos componentes separados:
+
+| Componente | Plataforma | URL |
+| ---------- | ---------- | --- |
+| **Frontend** | GitHub Pages | <https://pabloostenero.github.io/pps-autenticacion/> |
+| **Backend (API)** | Render | <https://pps-autenticacion.onrender.com> |
+
+- Swagger: <https://pps-autenticacion.onrender.com/docs>
+- Estado: <https://pps-autenticacion.onrender.com/salud>
+- Repositorio: <https://github.com/PabloOstenero/pps-autenticacion>
+
+### Backend en Render
+
+Servicio **Web Service** (Python 3) apuntando a la raíz del repositorio:
+
+| Ajuste | Valor |
+| ------ | ----- |
+| Root Directory | *(raíz del repo)* |
+| Build Command | `pip install -r requirements.txt` |
+| Start Command | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
+| Health Check Path | `/salud` |
+
+Variables de entorno:
+
+| Variable | Valor |
+| -------- | ----- |
+| `SECRET_KEY` | Clave aleatoria de 64 caracteres hex: `python -c "import secrets; print(secrets.token_hex(32))"` |
+| `CORS_ORIGINS` | `https://pabloostenero.github.io,http://localhost:5173` |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | `15` |
+| `REFRESH_TOKEN_EXPIRE_DAYS` | `7` |
+| `PYTHON_VERSION` | `3.13.0` |
+
+> `SECRET_KEY` debe ser fija: si no se define, el backend genera una aleatoria en
+> cada arranque y todas las sesiones se invalidan. Los datos se guardan en memoria,
+> así que se reinician cuando el servicio se duerme (plan free) o se redepliega.
+
+### Frontend en GitHub Pages
+
+El despliegue es automático con GitHub Actions:
+
+- Workflow: `.github/workflows/deploy-frontend.yml`
+- Se ejecuta en cada push a `main` o manualmente desde **Actions → Run workflow**.
+- Instala dependencias con `npm ci`, compila con `npm run build` y publica `frontend/dist`.
+- `VITE_API_URL` se inyecta en el build: `https://pps-autenticacion.onrender.com`.
+- En `frontend/vite.config.js`, `base: "/pps-autenticacion/"` para que los assets se
+  sirvan bajo el subdirectorio del repositorio.
+- El router usa **hash history** (`/#/tienda`), de modo que recargar una ruta funciona
+  en GitHub Pages sin necesidad de rewrites en el servidor.
+- Origen de Pages: **Settings → Pages → Build and deployment → GitHub Actions**.
+
+### CORS
+
+El frontend y el backend están en dominios distintos, así que el backend debe
+permitir el origen del frontend:
+
+```
+CORS_ORIGINS=https://pabloostenero.github.io,http://localhost:5173
+```
+
+Es solo el origen (esquema + dominio), sin la ruta del repo ni barra final.
+
+### Probar el despliegue
+
+1. Abre <https://pabloostenero.github.io/pps-autenticacion/> → redirige a `/#/tienda`.
+2. Inicia sesión con `owner` / `owner1234`.
+3. Recarga la página en una ruta y comprueba que no da 404.
+4. Comprueba la API en <https://pps-autenticacion.onrender.com/salud> y `/docs`.
 
 ## Autenticación: JWT con **access + refresh**
 

@@ -47,6 +47,8 @@ PPS-tienda-prueba/
 ├── .github/
 │   └── workflows/
 │       └── deploy-frontend.yml   # CI/CD: publica el frontend en GitHub Pages
+├── docs/
+│   └── estudio-comparativo-costes.md  # comparativa Render / AWS / Azure / GCP
 ├── requirements.txt
 ├── smoke_test.py            # 62 comprobaciones de la API
 └── README.md
@@ -320,4 +322,9 @@ detección de reuso**, logout, **CORS**, endpoints protegidos (401), **RBAC** co
 - **Escalado a producción:** fija `SECRET_KEY`, usa HTTPS, restringe `CORS_ORIGINS`,
   sustituye el almacén en memoria por una base de datos y guarda los refresh tokens
   (y sus revocaciones) también en esa base de datos.
-```
+
+## Documentación adicional
+
+- [Estudio comparativo del coste de explotación](docs/estudio-comparativo-costes.md):
+  comparativa de Render, AWS, Azure y Google Cloud para este proyecto (escenarios,
+  precios unitarios verificados, costes ocultos y recomendación).
